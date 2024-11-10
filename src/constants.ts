@@ -3,10 +3,10 @@ export const criteria = [
 		name: "Проверка наименования",
 		endpoint: "/api/check_title",
 	},
-	{
-		name: 'Проверка поля "обеспечение исполнения контракта"',
-		endpoint: "/api/check_contract_enforced",
-	},
+	// {
+	// 	name: 'Проверка поля "обеспечение исполнения контракта"',
+	// 	endpoint: "/api/check_contract_enforced",
+	// },
 	// { name: "Проверка наличия сертификатов/лицензий" },
 	// { name: "Проверка графика поставки и этапа поставки" },
 	{
@@ -29,15 +29,24 @@ export const criteria = [
 	// { name: "Проверка количества характеристик." },
 ];
 
-export const initialChecks = criteria.map(({ name }) => ({
-	name,
-	enabled: true,
-}));
+export const initialChecks = Object.fromEntries(
+	criteria.map(({ name }) => [name, true])
+);
 
 export interface CheckResponse {
-	message: string;
-	plausibility: number;
+	plausibility?: number;
+	message?: string;
+	status?: "loading" | "success" | "error" | "empty" | null;
+	additional_info?: string[][];
 }
 
 export const initialResponses: Record<string, CheckResponse | null> =
 	Object.fromEntries(criteria.map(({ name }) => [name, null]));
+
+export const LINK_REGEX =
+	/^(https:\/\/|(www\.))?zakupki\.mos\.ru\/auction\/\d+$/;
+
+export const validateLink = (link: string) =>
+	LINK_REGEX.test(link) ||
+	/^\d+$/.test(link) ||
+	"Ввод должен быть ссылкой вида https://zakupki.mos.ru/auction/9869986 или числовым ID сессии";

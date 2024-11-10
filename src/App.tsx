@@ -7,296 +7,223 @@ import {
 	Button,
 	Card,
 	Switch,
-	Loader,
 	Flex,
+	Popover,
+	Spin,
+	Disclosure,
 } from "@gravity-ui/uikit";
-import { Check, Ban, CircleExclamation } from "@gravity-ui/icons";
+import {
+	Check,
+	CircleExclamation,
+	Gear,
+	CircleQuestion,
+	Ban,
+} from "@gravity-ui/icons";
 import {
 	CheckResponse,
 	criteria,
 	initialChecks,
 	initialResponses,
+	validateLink,
 } from "./constants";
-import { useForm } from "react-hook-form";
-import { useRef, useState } from "react";
 import axios from "axios";
+import { Field } from "./components/Field";
+import { FilePicker } from "./components/FilePicker";
+import { FormEventHandler, useCallback, useState } from "react";
 
-interface LocalCheckResponse {
-	plausibility?: number;
-	message?: string;
-	status?: "loading" | "success" | "error" | "empty" | null;
-	progress?: number;
-}
-
-interface Form {
-	link: string;
-	checks: Array<{
-		name: string;
-		enabled: boolean;
-	}>;
-}
+const StatusIcon = {
+	success: <Icon data={Check} stroke="var(--g-color-line-positive)" />,
+	error: <Icon data={CircleExclamation} stroke="var(--g-color-line-danger)" />,
+	empty: <Icon data={CircleQuestion} />,
+	loading: <Spin size="xs" />,
+	null: <Icon data={Ban} />,
+};
 
 export const App: React.FC = () => {
-	const inputFileRef = useRef<HTMLInputElement | null>(null);
 	const [file, setFile] = useState<File | null>(null);
 	const [loading, setLoading] = useState(false);
-	const [showSettings, setShowSettings] = useState(false);
+	const [link, setLink] = useState("");
+	const [checks, setCheks] = useState(initialChecks);
+	const [linkError, setLinkError] = useState<string>();
+	const [fileError, setFileError] = useState<string>();
 
-	const { handleSubmit, register } = useForm<Form>({
-		defaultValues: {
-			checks: initialChecks,
-			link: "",
-		},
-	});
+	const [responses, setResponses] = useState(initialResponses);
 
-	const [responses, setResponses] = useState<
-		Record<string, LocalCheckResponse>
-	>(initialResponses as Record<string, LocalCheckResponse>);
+	const submitHandler = useCallback<FormEventHandler>(
+		async event => {
+			event.preventDefault();
 
-	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const selectedFile = event.target.files?.[0] ?? null;
+			const checkLink = validateLink(link);
+			const checkFile = Boolean(file) || "Загрузите файл";
 
-		if (inputFileRef.current) {
-			inputFileRef.current.value = "";
-		}
+			if (checkLink !== true) {
+				setLinkError(checkLink);
+			}
 
-		setFile(selectedFile);
-	};
+			if (checkFile !== true) {
+				setFileError(checkFile);
+			}
 
-	const submitHandler = handleSubmit(async ({ checks, link }) => {
-		setLoading(true);
+			if (!(checkFile === true && checkLink === true)) {
+				return;
+			}
 
-		setResponses(initialResponses as Record<string, LocalCheckResponse>);
+			console.log(file?.type);
 
-		const enabledChecks = checks.filter(({ enabled }) => enabled);
+			setLoading(true);
 
-		Promise.all(
-			enabledChecks.map(async ({ name }) => {
-				const formData = new FormData();
-				if (file) {
-					formData.set("file", file);
-				}
+			const enabledChecks = Object.entries(checks)
+				.map(([name, enabled]) => ({ name, enabled }))
+				.filter(({ enabled }) => enabled);
 
-				setResponses(prev => ({
-					...prev,
-					[name]: { status: "loading", progress: 0 } as LocalCheckResponse,
-				}));
+			await Promise.all(
+				enabledChecks.map(async ({ name }) => {
+					try {
+						setResponses(prev => ({ ...prev, [name]: { status: "loading" } }));
 
-				const interval = setInterval(() => {
-					setResponses(prev => {
-						const currentProgress = prev[name]?.progress || 0;
-						if (currentProgress >= 100) {
-							clearInterval(interval);
-							return prev;
+						const formData = new FormData();
+						if (file) {
+							formData.set("file", file);
 						}
-						return {
+
+						const { data } = await axios.post<CheckResponse>(
+							`${import.meta.env.VITE_API_URL}${criteria.find(c => c.name === name)?.endpoint}`,
+							formData,
+							{
+								params: {
+									id: link.slice(link.lastIndexOf("/") + 1),
+								},
+							}
+						);
+
+						setResponses(prev => ({
+							...prev,
+							[name]: { ...data, status: "success" },
+						}));
+					} catch (error) {
+						setResponses(prev => ({
 							...prev,
 							[name]: {
-								...prev[name],
-								progress: currentProgress + 10,
+								status: "error",
+								message:
+									error instanceof Error ? error.message : "Неизвестная ошибка",
 							},
-						};
-					});
-				}, 200);
-
-				try {
-					const { data } = await axios.post<CheckResponse>(
-						`${import.meta.env.VITE_API_URL}${criteria.find(c => c.name === name)?.endpoint}`,
-						formData,
-						{
-							params: {
-								id: link.slice(link.lastIndexOf("/") + 1),
-							},
-						}
-					);
-					clearInterval(interval);
-					return {
-						name,
-						data: {
-							...data,
-							status: data ? "success" : null,
-							progress: 100,
-						} as LocalCheckResponse,
-					};
-				} catch (error) {
-					clearInterval(interval);
-					return {
-						name,
-						data: { status: "error", progress: 100 } as LocalCheckResponse,
-					};
-				}
-			})
-		).then(results => {
-			setResponses(prev => ({
-				...prev,
-				...Object.fromEntries(
-					results.map(({ name, data }) => [name, data as LocalCheckResponse])
-				),
-			}));
+						}));
+					}
+				})
+			);
 			setLoading(false);
-		});
-	});
+		},
+		[checks, file, link]
+	);
 
 	return (
 		<div className={styles.container}>
 			<form className={styles.form} onSubmit={submitHandler}>
-				<TextInput
-					{...register("link")}
-					label="URL-адрес/ID котировочной сессии"
-					placeholder="Введите URL или ID сессии"
-					className={styles.textInput}
-				/>
-				<div className={styles.fileField}>
-					<Button
-						onClick={() => inputFileRef.current?.click()}
-						view="normal"
-						className={styles.uploadButton}
-					>
-						{file ? "Изменить файл" : "Загрузить файл"}
-					</Button>
-					<input
-						ref={inputFileRef}
-						type="file"
-						accept=".doc,.docx"
-						onChange={handleFileChange}
-						hidden
-					/>
-					{file && (
-						<div style={{ display: "flex", alignItems: "center" }}>
-							<Text>{file.name}</Text>
-							<Button
-								view="flat"
-								onClick={() => setFile(null)}
-								title="Удалить файл"
-								style={{ color: "red", marginLeft: "8px" }}
-							>
-								&times;
+				<Flex gap={2}>
+					<Field label="URL-адрес/ID котировочной сессии" style={{ flex: 1 }}>
+						<TextInput
+							value={link}
+							onUpdate={value => {
+								setLink(value);
+								setLinkError(undefined);
+							}}
+							placeholder="https://zakupki.mos.ru/auction/9869986"
+							className={styles.textInput}
+							disabled={loading}
+							error={linkError}
+						/>
+					</Field>
+
+					<Field>
+						<Popover
+							openOnHover={false}
+							className={styles.popover}
+							placement={"bottom-end"}
+							disabled={loading}
+							content={
+								<Flex direction="column" gap={2}>
+									{criteria.map(({ name }) => (
+										<Switch
+											content={name}
+											key={name}
+											checked={checks[name]}
+											onUpdate={checked =>
+												setCheks(prev => ({ ...prev, [name]: checked }))
+											}
+										/>
+									))}
+								</Flex>
+							}
+						>
+							<Button disabled={loading}>
+								<Icon data={Gear} />
 							</Button>
-						</div>
-					)}
-				</div>
-				<div className={styles.settings}>
-					<Button
-						view="normal"
-						onClick={() => setShowSettings(!showSettings)}
-						className={styles.settingsButton}
-					>
-						Настройки
-					</Button>
-					{showSettings && (
-						<Card className={styles.settingsDropdown}>
-							{criteria.map(({ name }, index) => (
-								<div key={name} className={styles.switchWrapper}>
-									<Switch
-										{...register(`checks.${index}.enabled`)}
-										content={name}
-										defaultChecked
-										className={styles.switch}
-									/>
-								</div>
-							))}
-						</Card>
-					)}
-				</div>
+						</Popover>
+					</Field>
+				</Flex>
+
+				<FilePicker
+					file={file}
+					onChange={f => {
+						setFile(f);
+						setFileError(undefined);
+					}}
+					disabled={loading}
+					error={fileError}
+				/>
+
 				<Button
 					type="submit"
 					view="action"
 					size="l"
 					className={styles.submitButton}
-					disabled={loading}
+					disabled={
+						loading || Object.values(checks).every(enabled => enabled === false)
+					}
+					loading={loading}
 				>
 					Проверить
-					{loading && <Loader size="s" />}
 				</Button>
 			</form>
-			<div className={styles.checkResults}>
-				{Object.entries(responses).map(([name, response]) => (
-					<Card
-						key={name}
-						className={`${styles.checkResult} ${
-							response?.status === "success"
-								? styles.success
-								: response?.status === "error"
-									? styles.error
-									: response?.status === "empty"
-										? styles.warning
-										: styles.neutral
-						}`}
-					>
-						<Flex justifyContent="center" alignItems="center">
-							<Text
-								style={{
-									textAlign: response?.status === "loading" ? "center" : "left",
-								}}
-							>
-								{name}
-							</Text>
-							{response?.status === "loading" ? (
-								<div className={styles.progressBarContainer}>
-									<div
-										className={styles.progressBar}
-										style={{ width: `${response.progress ?? 0}%` }}
-									>
-										<span className={styles.progressText}>
-											{response.progress ?? 0}%
-										</span>
-									</div>
-								</div>
-							) : (
-								<div style={{ marginLeft: "auto" }}>
-									<Label>
-										{response?.status === "error"
-											? "Ошибка"
-											: response?.status === "empty"
-												? "Нет данных"
-												: `${response?.plausibility ?? ""}%`}
-									</Label>
-								</div>
-							)}
-							{response?.status === null && (
-								<span
-									title="Нет данных"
-									style={{ color: "green", marginLeft: "8px" }}
-								>
-									<Icon data={Ban} stroke="orange" />
-								</span>
-							)}
-							{response?.status === "success" && response?.message && (
-								<span
-									title="Успешно"
-									style={{ color: "green", marginLeft: "8px" }}
-								>
-									<Icon data={Check} />
-								</span>
-							)}
-							{response?.status === "error" && (
-								<span
-									title="Ошибка проверки"
-									style={{
-										color: "red",
-										fontWeight: "bold",
-										marginLeft: "8px",
-									}}
-								>
-									<Icon data={CircleExclamation} stroke="red" />
-								</span>
-							)}
-							{response?.status === "empty" && (
-								<span
-									title="Нет данных"
-									style={{
-										color: "yellow",
-										fontWeight: "bold",
-										marginLeft: "8px",
-									}}
-								>
-									❓
-								</span>
-							)}
-						</Flex>
-					</Card>
-				))}
-			</div>
+			<Flex direction="column" gap={2}>
+				{Object.entries(responses)
+					.filter(([, response]) => response !== null)
+					.map(([name, response]) => (
+						<Card key={name} style={{ padding: "8px 16px" }}>
+							<Flex gap={3} direction="column">
+								<Flex alignItems="center" gap={2}>
+									{response?.status && StatusIcon[response.status]}
+									<Flex justifyContent="space-between" style={{ flex: 1 }}>
+										<Text>{name}</Text>
+										<Label>
+											{response?.plausibility
+												? `${response.plausibility}%`
+												: null}
+										</Label>
+									</Flex>
+								</Flex>
+								{response?.message && (
+									<Text variant="caption-2">{response.message}</Text>
+								)}
+								{response?.additional_info &&
+									response.additional_info.length > 0 && (
+										<Disclosure
+											summary={<Text variant="caption-2">Подробнее</Text>}
+										>
+											<ol>
+												{response.additional_info.map(item => (
+													<li>
+														<Text variant="caption-1">{item.join(" • ")}</Text>
+													</li>
+												))}
+											</ol>
+										</Disclosure>
+									)}
+							</Flex>
+						</Card>
+					))}
+			</Flex>
 		</div>
 	);
 };
