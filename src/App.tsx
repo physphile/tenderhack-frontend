@@ -68,9 +68,8 @@ export const App: React.FC = () => {
 				return;
 			}
 
-			console.log(file?.type);
-
 			setLoading(true);
+			setResponses(initialResponses);
 
 			const enabledChecks = Object.entries(checks)
 				.map(([name, enabled]) => ({ name, enabled }))
