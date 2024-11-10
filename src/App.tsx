@@ -36,7 +36,6 @@ const StatusIcon = {
 	error: <Icon data={CircleExclamation} stroke="var(--g-color-line-danger)" />,
 	empty: <Icon data={CircleQuestion} />,
 	loading: <Spin size="xs" />,
-	null: <Icon data={Ban} />,
 };
 
 export const App: React.FC = () => {
@@ -97,7 +96,7 @@ export const App: React.FC = () => {
 
 						setResponses(prev => ({
 							...prev,
-							[name]: { ...data, status: "success" },
+							[name]: { ...data, status: data ? "success" : "empty" },
 						}));
 					} catch (error) {
 						setResponses(prev => ({
