@@ -87,7 +87,7 @@ export const App: React.FC = () => {
 							formData.set("file", file);
 						}
 
-						const { data } = await axios.post<CheckResponse>(
+						const { data } = await axios.post<CheckResponse | null>(
 							`${import.meta.env.VITE_API_URL}${criteria.find(c => c.name === name)?.endpoint}`,
 							formData,
 							{
@@ -101,22 +101,37 @@ export const App: React.FC = () => {
 							...prev,
 							[name]: {
 								...data,
-								status: warnings.includes(name)
-									? "warning"
-									: data
-										? data.message?.includes("Требуется")
-											? "warning"
-											: "success"
-										: "empty",
+								status: (function () {
+									if (warnings.includes(name)) {
+										return "warning";
+									}
+
+									if (data?.message?.includes("Требуется")) {
+										return "warning";
+									}
+
+									if (data?.plausibility) {
+										if (data.plausibility > 40) {
+											return "success";
+										} else {
+											return "warning";
+										}
+									}
+
+									if (data) {
+										return "success";
+									}
+
+									return "empty";
+								})(),
 							},
 						}));
+						// eslint-disable-next-line @typescript-eslint/no-unused-vars
 					} catch (error) {
 						setResponses(prev => ({
 							...prev,
 							[name]: {
-								status: "error",
-								message:
-									error instanceof Error ? error.message : "Неизвестная ошибка",
+								status: "warning",
 							},
 						}));
 					}
@@ -219,7 +234,11 @@ export const App: React.FC = () => {
 											<ol>
 												{response.additional_info.map(item => (
 													<li>
-														<Text variant="caption-1">{item.join(" • ")}</Text>
+														<Text variant="caption-1">
+															{item
+																.join(" • ")
+																.replace("• [object Object]", "")}
+														</Text>
 													</li>
 												))}
 											</ol>
