@@ -1,53 +1,137 @@
+/* Основные стили контейнера приложения */
 .container {
-	width: min(1200px, 100%);
-	margin: 0 auto;
-	padding: 16px;
-}
-
-.filePicker {
-	position: relative;
-}
-
-.inputFileLabel {
-	cursor: pointer;
-	transition: transform 0.1s ease-out !important;
-	transform: scale(1);
-}
-
-.inputFileLabel:hover {
-	transform: scale(0.9);
-}
-
-.form {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	margin-bottom: 40px;
+	align-items: center;
+	padding: 20px;
+	background-color: #f7f7f7;
+	font-family: Arial, sans-serif;
+}
+
+/* Стили формы и кнопок */
+.form {
+	width: 100%;
+	max-width: 600px;
+	margin-bottom: 20px;
+}
+
+.textInput {
+	width: 100%;
+	margin-bottom: 16px;
 }
 
 .fileField {
 	display: flex;
-	gap: 8px;
+	align-items: center;
+	margin-bottom: 16px;
+}
+
+.uploadButton {
+	margin-right: 10px;
+}
+
+.submitButton {
+	width: 100%;
+}
+
+/* Стили для выпадающего меню настроек */
+.settings {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	margin-bottom: 16px;
+	position: relative;
+}
+
+.settingsButton {
+	margin-bottom: 5px;
+}
+
+.settingsDropdown {
+	width: 100%;
+	max-width: 300px;
+	padding: 10px;
+	background-color: #fff;
+	border-radius: 8px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	display: flex;
+	flex-direction: column;
+}
+
+.switchWrapper {
+	margin-bottom: 8px;
+}
+
+/* Стили результатов проверок */
+.checkResults {
+	width: 100%;
+	max-width: 600px;
+	margin-top: 20px;
+}
+
+.checkResult {
+	width: 100%;
+	padding: 10px;
+	margin: 10px 0;
+	border-radius: 8px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+	background-color: #fff;
+	transition: background-color 0.3s;
+}
+
+.success {
+	border-left: 4px solid green;
+}
+
+.error {
+	border-left: 4px solid red;
+}
+
+.warning {
+	border-left: 4px solid yellow;
+}
+
+.neutral {
+	border-left: 4px solid gray;
+}
+
+/* Стили Flex-контейнера для результатов */
+.flexContainer {
+	display: flex;
+	justify-content: space-between;
 	align-items: center;
 }
 
-.checks {
+/* Стили шкалы загрузки */
+.progressBarContainer {
+	width: 150px;
+	height: 16px;
+	background-color: #e0e0e0;
+	border-radius: 4px;
+	overflow: hidden;
+	position: relative;
+	margin-left: auto;
 	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.check {
-	display: flex;
-	gap: 8px;
-	padding: 8px 10px;
 	align-items: center;
+	justify-content: center;
 }
 
-.checkboxes {
-	padding: 16px;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	margin-bottom: 20px;
+.progressBar {
+	height: 100%;
+	background-color: green;
+	position: absolute;
+	top: 0;
+	left: 0;
+	transition: width 0.2s;
+	z-index: 0; /* Задний слой для полосы загрузки */
+}
+
+.progressText {
+	color: white;
+	font-size: 12px;
+	font-weight: bold;
+	position: absolute;
+	width: 100%;
+	text-align: center;
+	z-index: 1; /* Передний слой для текста поверх полосы загрузки */
 }

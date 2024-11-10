@@ -25,6 +25,7 @@ interface LocalCheckResponse {
 	plausibility?: number;
 	message?: string;
 	status?: "loading" | "success" | "error" | "empty";
+	progress?: number;
 }
 
 interface Form {
@@ -39,6 +40,7 @@ export const App: React.FC = () => {
 	const inputFileRef = useRef<HTMLInputElement | null>(null);
 	const [file, setFile] = useState<File | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [showSettings, setShowSettings] = useState(false);
 
 	const { handleSubmit, register } = useForm<Form>({
 		defaultValues: {
@@ -77,8 +79,25 @@ export const App: React.FC = () => {
 
 				setResponses(prev => ({
 					...prev,
-					[name]: { status: "loading" } as LocalCheckResponse,
+					[name]: { status: "loading", progress: 0 } as LocalCheckResponse,
 				}));
+
+				const interval = setInterval(() => {
+					setResponses(prev => {
+						const currentProgress = prev[name]?.progress || 0;
+						if (currentProgress >= 100) {
+							clearInterval(interval);
+							return prev;
+						}
+						return {
+							...prev,
+							[name]: {
+								...prev[name],
+								progress: currentProgress + 10,
+							},
+						};
+					});
+				}, 200);
 
 				try {
 					const { data } = await axios.post<CheckResponse>(
@@ -90,12 +109,21 @@ export const App: React.FC = () => {
 							},
 						}
 					);
+					clearInterval(interval);
 					return {
 						name,
-						data: { ...data, status: "success" } as LocalCheckResponse,
+						data: {
+							...data,
+							status: "success",
+							progress: 100,
+						} as LocalCheckResponse,
 					};
 				} catch (error) {
-					return { name, data: { status: "error" } as LocalCheckResponse };
+					clearInterval(interval);
+					return {
+						name,
+						data: { status: "error", progress: 100 } as LocalCheckResponse,
+					};
 				}
 			})
 		).then(results => {
@@ -147,17 +175,29 @@ export const App: React.FC = () => {
 						</div>
 					)}
 				</div>
-				<Card className={styles.checkboxes}>
-					{criteria.map(({ name }, index) => (
-						<Switch
-							{...register(`checks.${index}.enabled`)}
-							content={name}
-							defaultChecked
-							key={name}
-							className={styles.switch}
-						/>
-					))}
-				</Card>
+				<div className={styles.settings}>
+					<Button
+						view="normal"
+						onClick={() => setShowSettings(!showSettings)}
+						className={styles.settingsButton}
+					>
+						Настройки
+					</Button>
+					{showSettings && (
+						<Card className={styles.settingsDropdown}>
+							{criteria.map(({ name }, index) => (
+								<div key={name} className={styles.switchWrapper}>
+									<Switch
+										{...register(`checks.${index}.enabled`)}
+										content={name}
+										defaultChecked
+										className={styles.switch}
+									/>
+								</div>
+							))}
+						</Card>
+					)}
+				</div>
 				<Button
 					type="submit"
 					view="action"
@@ -183,51 +223,67 @@ export const App: React.FC = () => {
 										: styles.neutral
 						}`}
 					>
-						<Flex justifyContent="space-between" alignItems="center">
+						<Flex justifyContent="center" alignItems="center">
+							<Text
+								style={{
+									textAlign: response?.status === "loading" ? "center" : "left",
+								}}
+							>
+								{name}
+							</Text>
 							{response?.status === "loading" ? (
-								<span title="Проверка выполняется">...</span>
-							) : response?.status === "success" && response?.message ? (
-								<span title="Успешно" style={{ color: "green" }}>
+								<div className={styles.progressBarContainer}>
+									<div
+										className={styles.progressBar}
+										style={{ width: `${response.progress ?? 0}%` }}
+									>
+										<span className={styles.progressText}>
+											{response.progress ?? 0}%
+										</span>
+									</div>
+								</div>
+							) : (
+								<div style={{ marginLeft: "auto" }}>
+									<Label>
+										{response?.status === "error"
+											? "Ошибка"
+											: response?.status === "empty"
+												? "Нет данных"
+												: `${response?.plausibility ?? ""}%`}
+									</Label>
+								</div>
+							)}
+							{response?.status === "success" && response?.message && (
+								<span
+									title="Успешно"
+									style={{ color: "green", marginLeft: "8px" }}
+								>
 									<Icon data={Check} />
 								</span>
-							) : response?.status === "error" ? (
+							)}
+							{response?.status === "error" && (
 								<span
 									title="Ошибка проверки"
-									style={{ color: "red", fontWeight: "bold" }}
+									style={{
+										color: "red",
+										fontWeight: "bold",
+										marginLeft: "8px",
+									}}
 								>
 									❗
 								</span>
-							) : response?.status === "empty" ? (
+							)}
+							{response?.status === "empty" && (
 								<span
 									title="Нет данных"
-									style={{ color: "yellow", fontWeight: "bold" }}
+									style={{
+										color: "yellow",
+										fontWeight: "bold",
+										marginLeft: "8px",
+									}}
 								>
 									❓
 								</span>
-							) : response && !response?.message ? (
-								<span
-									title="Пустой ответ"
-									style={{ color: "gray", fontWeight: "bold" }}
-								>
-									⚠
-								</span>
-							) : (
-								<span
-									title="Ожидание проверки"
-									style={{ color: "gray", fontWeight: "bold" }}
-								>
-									...
-								</span>
-							)}
-							<Text>{name}</Text>
-							{response?.plausibility !== undefined && (
-								<Label>
-									{response.status === "error"
-										? "Ошибка"
-										: response.status === "empty"
-											? "Нет данных"
-											: `${response.plausibility}%`}
-								</Label>
 							)}
 						</Flex>
 					</Card>
