@@ -1,14 +1,27 @@
 /* Основные стили контейнера приложения */
 .container {
 	display: flex;
+	justify-self: center;
 	flex-direction: column;
 	align-items: center;
 	padding: 20px;
-	background-color: #f7f7f7;
+	width: 700px;
+	background-color: var(--g-color-base-generic);
 	font-family: Arial, sans-serif;
+	margin-top: 20px;
+	border-radius: 10px;
 }
 
-/* Стили формы и кнопок */
+.textInput,
+.fileField,
+.settingsDropdown,
+.checkResults,
+.checkResult,
+.submitButton,
+.progressText {
+	font-size: 16px;
+}
+
 .form {
 	width: 100%;
 	max-width: 600px;
@@ -32,9 +45,9 @@
 
 .submitButton {
 	width: 100%;
+	font-size: 16px;
 }
 
-/* Стили для выпадающего меню настроек */
 .settings {
 	display: flex;
 	flex-direction: column;
@@ -62,7 +75,6 @@
 	margin-bottom: 8px;
 }
 
-/* Стили результатов проверок */
 .checkResults {
 	width: 100%;
 	max-width: 600px;
@@ -71,12 +83,13 @@
 
 .checkResult {
 	width: 100%;
-	padding: 10px;
+	padding: 15px;
 	margin: 10px 0;
 	border-radius: 8px;
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 	background-color: #fff;
 	transition: background-color 0.3s;
+	font-size: 16px;
 }
 
 .success {
@@ -95,14 +108,12 @@
 	border-left: 4px solid gray;
 }
 
-/* Стили Flex-контейнера для результатов */
 .flexContainer {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 }
 
-/* Стили шкалы загрузки */
 .progressBarContainer {
 	width: 150px;
 	height: 16px;
@@ -123,7 +134,7 @@
 	top: 0;
 	left: 0;
 	transition: width 0.2s;
-	z-index: 0; /* Задний слой для полосы загрузки */
+	z-index: 0;
 }
 
 .progressText {
@@ -133,5 +144,5 @@
 	position: absolute;
 	width: 100%;
 	text-align: center;
-	z-index: 1; /* Передний слой для текста поверх полосы загрузки */
+	z-index: 1;
 }
