@@ -1,6 +1,5 @@
 import styles from "./App.module.css";
 import {
-	Label,
 	TextInput,
 	Text,
 	Icon,
@@ -105,7 +104,9 @@ export const App: React.FC = () => {
 								status: warnings.includes(name)
 									? "warning"
 									: data
-										? "success"
+										? data.message?.includes("Требуется")
+											? "warning"
+											: "success"
 										: "empty",
 							},
 						}));
@@ -205,11 +206,6 @@ export const App: React.FC = () => {
 									{response?.status && StatusIcon[response.status]}
 									<Flex justifyContent="space-between" style={{ flex: 1 }}>
 										<Text>{name}</Text>
-										<Label>
-											{response?.plausibility
-												? `${response.plausibility}%`
-												: null}
-										</Label>
 									</Flex>
 								</Flex>
 								{response?.message && (
