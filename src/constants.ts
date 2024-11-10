@@ -3,10 +3,10 @@ export const criteria = [
 		name: "Проверка наименования",
 		endpoint: "/api/check_title",
 	},
-	// {
-	// 	name: 'Проверка поля "обеспечение исполнения контракта"',
-	// 	endpoint: "/api/check_contract_enforced",
-	// },
+	{
+		name: 'Проверка поля "обеспечение исполнения контракта"',
+		endpoint: "/api/check_contract_enforced",
+	},
 	// { name: "Проверка наличия сертификатов/лицензий" },
 	// { name: "Проверка графика поставки и этапа поставки" },
 	{
@@ -29,6 +29,12 @@ export const criteria = [
 	// { name: "Проверка количества характеристик." },
 ];
 
+export const warnings = [
+	"Проверка внешнего вида товаров",
+	'Проверка поля "обеспечение исполнения контракта"',
+	"Проверка значения характеристики спецификации закупки.",
+];
+
 export const initialChecks = Object.fromEntries(
 	criteria.map(({ name }) => [name, true])
 );
@@ -36,7 +42,7 @@ export const initialChecks = Object.fromEntries(
 export interface CheckResponse {
 	plausibility?: number;
 	message?: string;
-	status?: "loading" | "success" | "error" | "empty" | null;
+	status?: "loading" | "success" | "error" | "empty" | null | "warning";
 	additional_info?: string[][];
 }
 

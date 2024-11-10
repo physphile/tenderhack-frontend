@@ -17,7 +17,7 @@ import {
 	CircleExclamation,
 	Gear,
 	CircleQuestion,
-	Ban,
+	TriangleExclamation,
 } from "@gravity-ui/icons";
 import {
 	CheckResponse,
@@ -25,6 +25,7 @@ import {
 	initialChecks,
 	initialResponses,
 	validateLink,
+	warnings,
 } from "./constants";
 import axios from "axios";
 import { Field } from "./components/Field";
@@ -34,6 +35,9 @@ import { FormEventHandler, useCallback, useState } from "react";
 const StatusIcon = {
 	success: <Icon data={Check} stroke="var(--g-color-line-positive)" />,
 	error: <Icon data={CircleExclamation} stroke="var(--g-color-line-danger)" />,
+	warning: (
+		<Icon data={TriangleExclamation} stroke="var(--g-color-line-warning)" />
+	),
 	empty: <Icon data={CircleQuestion} />,
 	loading: <Spin size="xs" />,
 };
@@ -96,7 +100,14 @@ export const App: React.FC = () => {
 
 						setResponses(prev => ({
 							...prev,
-							[name]: { ...data, status: data ? "success" : "empty" },
+							[name]: {
+								...data,
+								status: warnings.includes(name)
+									? "warning"
+									: data
+										? "success"
+										: "empty",
+							},
 						}));
 					} catch (error) {
 						setResponses(prev => ({
