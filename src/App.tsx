@@ -10,7 +10,7 @@ import {
 	Loader,
 	Flex,
 } from "@gravity-ui/uikit";
-import { Check } from "@gravity-ui/icons";
+import { Check, Ban, CircleExclamation } from "@gravity-ui/icons";
 import {
 	CheckResponse,
 	criteria,
@@ -24,7 +24,7 @@ import axios from "axios";
 interface LocalCheckResponse {
 	plausibility?: number;
 	message?: string;
-	status?: "loading" | "success" | "error" | "empty";
+	status?: "loading" | "success" | "error" | "empty" | null;
 	progress?: number;
 }
 
@@ -114,7 +114,7 @@ export const App: React.FC = () => {
 						name,
 						data: {
 							...data,
-							status: "success",
+							status: data ? "success" : null,
 							progress: 100,
 						} as LocalCheckResponse,
 					};
@@ -253,6 +253,14 @@ export const App: React.FC = () => {
 									</Label>
 								</div>
 							)}
+							{response?.status === null && (
+								<span
+									title="Нет данных"
+									style={{ color: "green", marginLeft: "8px" }}
+								>
+									<Icon data={Ban} stroke="orange" />
+								</span>
+							)}
 							{response?.status === "success" && response?.message && (
 								<span
 									title="Успешно"
@@ -270,7 +278,7 @@ export const App: React.FC = () => {
 										marginLeft: "8px",
 									}}
 								>
-									❗
+									<Icon data={CircleExclamation} stroke="red" />
 								</span>
 							)}
 							{response?.status === "empty" && (
